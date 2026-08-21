@@ -1,0 +1,27 @@
+{% include 'Layout/header.html' %}
+<style>
+    #form {
+        margin-top: 30px !important;
+        margin-bottom: 80px !important;
+    }
+</style>
+<section id="form">
+    <div class="container">
+        <div class="row">
+            {% include 'Layout/menuLeft.html' %}
+
+            <div class="col-sm-4">
+                <div class="signup-form">
+                    <h2>New User Signup!</h2>
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <button type="submit">Lưu thông tin</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% include 'Layout/footer.html' %}

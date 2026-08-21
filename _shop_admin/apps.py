@@ -1,6 +1,0 @@
-from django.apps import AppConfig
-
-
-class ShopAdminConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = '_shop_admin'
