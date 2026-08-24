@@ -8,7 +8,7 @@ class Blog(models.Model):
     description = models.TextField(max_length=100)
     content = CKEditor5Field("Content", config_name="extends")
     image = models.ImageField(
-        upload_to="blog/",
+        upload_to="static/blog/",
         null=True,
         blank=True,
     )
@@ -17,6 +17,7 @@ class Blog(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
     )
+
 
     def __str__(self):
         return self.title
