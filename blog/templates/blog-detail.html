@@ -70,16 +70,16 @@
                     </div><!--/blog-post-area-->
 
                     <div class="rating-area">
-                        <ul class="ratings">
-                            <li class="rate-this">Rate this item:</li>
-                            <li>
-                                <i class="fa fa-star color"></i>
-                                <i class="fa fa-star color"></i>
-                                <i class="fa fa-star color"></i>
-                                <i class="fa fa-star"></i>
-                                <i class="fa fa-star"></i>
-                            </li>
-                            <li class="color">(6 votes)</li>
+                        <ul class="ratings" id="rating-box" data-is-logged="{{ user.is_authenticated|yesno:'true,false' }}" data-blog-id="{{ blog.id }}">                            <li class="rate-this">Rate this item:</li>
+                           <li>
+									<i class="fa fa-star rate-star color" data-value="1"></i>
+									<i class="fa fa-star rate-star color" data-value="2"></i>
+									<i class="fa fa-star rate-star color" data-value="3"></i>
+									<i class="fa fa-star rate-star" data-value="4"></i>
+									<i class="fa fa-star rate-star" data-value="5"></i>
+								</li>
+                            <li class="fa fa-star color">{{avg_rate}}</li>
+                            
                         </ul>
                         <ul class="tag">
                             <li>TAG:</li>
@@ -94,7 +94,7 @@
                     </div><!--/socials-share-->
 
                     <div class="response-area">
-                        <h2>3 RESPONSES</h2>
+                        <h2>3 RESPONSES</h2>    
                         <ul class="media-list">
                             <li class="media">
                                 <a class="pull-left" href="#">
@@ -102,7 +102,7 @@
                                 </a>
                                 <div class="media-body">
                                     <ul class="sinlge-post-meta">
-                                        <li><i class="fa fa-user"></i>Janis Gallagher</li>
+                                        <li><i class="fa fa-user"></i>{{blog.username}}</li>
                                         <li><i class="fa fa-clock-o"></i> 1:33 pm</li>
                                         <li><i class="fa fa-calendar"></i> DEC 5, 2013</li>
                                     </ul>
@@ -110,9 +110,8 @@
                                     <a class="btn btn-primary" href=""><i class="fa fa-reply"></i>Replay</a>
                                 </div>
                             </li>
-                        </ul>                   
+                        </ul> 
                     </div><!--/Response-area-->
-
                     <div class="replay-box">
                         <div class="row">
                             <div class="col-sm-12">
@@ -134,4 +133,53 @@
     </section>
     {% include 'layout/footer.html' %}
 </body>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    const ratingbox = document.getElementById('rating-box');
+    const isLoggedId = ratingbox.getAttribute('data-is-logged') === 'true';
+    const blog_id = ratingbox.getAttribute('data-blog-id'); 
+
+    document.querySelectorAll('.rate-star').forEach((star, index, allStars) => {
+        star.addEventListener('click', function() {
+            if (!isLoggedId) {
+                alert("Vui lòng đăng nhập để đánh giá!");
+                return; 
+            }
+
+            const rate = index + 1;
+            console.log("-> Chuẩn bị gửi AJAX với data:", { rate: rate, id_blog: blog_id });
+            allStars.forEach((s, i) => {
+                if (i <= index) {
+                    s.classList.add('color');
+                } else {
+                    s.classList.remove('color');
+                }
+            });
+            $.ajax({
+                type: 'POST',
+                url: "{% url 'rate_blog_view' %}", 
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                data: {
+                    rate: rate,
+                    id_blog: blog_id
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert("Cảm ơn bạn đã đánh giá!");
+                    } else {
+                        alert("Có lỗi: " + response.error);
+                    }
+                },
+                error: function(xhr) {
+                    alert("Có lỗi xảy ra trong quá trình gửi đánh giá!");
+                }
+            });
+        });
+    });
+
+
+</script>
 </html>
