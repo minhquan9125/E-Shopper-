@@ -32,7 +32,13 @@ class Comment(models.Model):
     cmt = models.CharField(max_length=50)
     id_user =  models.ForeignKey(CustomerUser,on_delete=models.CASCADE)
     id_blog = models.ForeignKey(Blog,on_delete=models.CASCADE) 
-    avatar=models.ImageField(upload_to='avatars/', null = True , blank=True)
+    parent = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name='replies'
+    )
     name_user = models.CharField(max_length=100)   
     level= models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)

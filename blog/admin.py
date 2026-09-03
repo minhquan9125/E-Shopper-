@@ -13,7 +13,7 @@ class RateAdmin(admin.ModelAdmin):
 admin.site.register(Rate, RateAdmin)
 
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ('cmt','id_user','id_blog','avatar','name_user','level','created_at')
+    list_display = ('cmt','id_user','id_blog','name_user','level','created_at')
     search_fields  = ('id_user','id_blog')
     list_filter = ['created_at']
 admin.site.register(Comment,CommentAdmin)

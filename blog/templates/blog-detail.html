@@ -15,7 +15,6 @@
     <link href="{% static 'css/responsive.css' %}" rel="stylesheet">     
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <!-- Icons Static Files -->
     <link rel="shortcut icon" href="{% static 'images/ico/favicon.ico' %}">
     <link rel="apple-touch-icon-precomposed" sizes="144x144" href="{% static 'images/ico/apple-touch-icon-144-precomposed.png' %}">
     <link rel="apple-touch-icon-precomposed" sizes="114x114" href="{% static 'images/ico/apple-touch-icon-114-precomposed.png' %}">
@@ -71,7 +70,7 @@
 
                     <div class="rating-area">
                         <ul class="ratings" id="rating-box" data-is-logged="{{ user.is_authenticated|yesno:'true,false' }}" data-blog-id="{{ blog.id }}">                            <li class="rate-this">Rate this item:</li>
-                           <li>
+                            <li>
 									<i class="fa fa-star rate-star color" data-value="1"></i>
 									<i class="fa fa-star rate-star color" data-value="2"></i>
 									<i class="fa fa-star rate-star color" data-value="3"></i>
@@ -94,35 +93,70 @@
                     </div><!--/socials-share-->
 
                     <div class="response-area">
-                        <h2>3 RESPONSES</h2>    
+                        <h2 id="responses-count">{{ comments|length }} RESPONSES</h2>    
                         <ul class="media-list">
-                            <li class="media">
+                            {% for cmt in comments %}
+                            {% if not cmt.parent_id %}
+                            <li class="media" id="comment-{{ cmt.id }}">
                                 <a class="pull-left" href="#">
-                                    <img class="media-object" src="{% static 'images/blog/man-two.jpg' %}" alt="">
+                                    {% if cmt.id_user.avatar %}
+                                        <img class="media-object" src="{{ cmt.id_user.avatar.url }}" alt="" style="width: 60px; height: 60px; object-fit: cover;">
+                                    {% else %}
+                                        <img class="media-object" src="{% static 'images/home/logo.png' %}" alt="" style="width: 60px; height: 60px; object-fit: cover;">
+                                    {% endif %}
                                 </a>
                                 <div class="media-body">
                                     <ul class="sinlge-post-meta">
-                                        <li><i class="fa fa-user"></i>{{blog.username}}</li>
-                                        <li><i class="fa fa-clock-o"></i> 1:33 pm</li>
-                                        <li><i class="fa fa-calendar"></i> DEC 5, 2013</li>
+                                        <li><i class="fa fa-user">{{cmt.id_user}}</i></li>
+                                        <li><i class="fa fa-clock-o"></i> {{ cmt.created_at|date:"H:i a" }}</li>
+                                        <li><i class="fa fa-calendar"></i>{{ cmt.created_at|date:"M d, Y" }}</li>
                                     </ul>
-                                    <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-                                    <a class="btn btn-primary" href=""><i class="fa fa-reply"></i>Replay</a>
+                                    <p>{{cmt.cmt}}</p>
+                                    <a class="btn btn-primary btn-reply" href="#" data-id="{{ cmt.id }}"><i class="fa fa-reply"></i>Reply</a>
                                 </div>
+                                <ul class="media-list" id="reply-{{ cmt.id }}"></ul>
                             </li>
-                        </ul> 
+                            {% for reply in cmt.replies.all %}
+                            <li class="media" style="margin-left: 40px;">
+                                <div id="comment-{{ reply.id }}">
+                                <a class="pull-left" href="#">
+                                    {% if reply.id_user.avatar %}
+                                        <img class="media-object" src="{{ reply.id_user.avatar.url }}" alt="" style="width: 60px; height: 60px; object-fit: cover;">
+                                    {% else %}
+                                        <img class="media-object" src="{% static 'images/home/logo.png' %}" alt="" style="width: 60px; height: 60px; object-fit: cover;">
+                                    {% endif %}
+                                </a>
+                                <div class="media-body">
+                                    <ul class="sinlge-post-meta">
+                                        <li><i class="fa fa-user"></i>{{ reply.name_user }}</li>
+                                        <li><i class="fa fa-clock-o"></i> {{ reply.created_at|date:"H:i a" }}</li>
+                                    </ul>
+                                    <p>{{ reply.cmt }}</p>
+                                    <a class="btn btn-primary btn-reply" href="#" data-id="{{ reply.id }}"><i class="fa fa-reply"></i>Reply</a>
+                                </div>
+                                <ul class="media-list" id="reply-{{ reply.id }}"></ul>
+                            </li>
+                            {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                        </ul>
+                        
                     </div><!--/Response-area-->
                     <div class="replay-box">
                         <div class="row">
                             <div class="col-sm-12">
-                                <h2>Leave a replay</h2>
+                                <h2 id="comment-form-title">Leave a reply</h2>
                                 <div class="text-area">
                                     <div class="blank-arrow">
-                                        <label>Your Name</label>
+                                        <label>{% if request.user.is_authenticated %}{{ request.user.username }}{% else %}Your Name{% endif %}</label>
                                     </div>
                                     <span>*</span>
-                                    <textarea name="message" rows="11"></textarea>
-                                    <a class="btn btn-primary" href="">post comment</a>
+                                    {% csrf_token %}
+                                    <input type="hidden" id="blog-id" value="{{ blog.id }}">
+                                    <textarea name="message" id="comment-text" rows="11"></textarea>
+                                    <input type="hidden" id="reply-to" value="">
+                                    <a class="btn btn-primary" id="btn-post-comment" href="">post comment</a>
+                                    <a class="btn btn-default" id="btn-cancel-reply" href="#" style="display: none;">Cancel</a>
                                 </div>
                             </div>
                         </div>
@@ -133,12 +167,17 @@
     </section>
     {% include 'layout/footer.html' %}
 </body>
+
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     const ratingbox = document.getElementById('rating-box');
     const isLoggedId = ratingbox.getAttribute('data-is-logged') === 'true';
-    const blog_id = ratingbox.getAttribute('data-blog-id'); 
+    const blog_id = ratingbox.getAttribute('data-blog-id');
 
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // Rating stars
     document.querySelectorAll('.rate-star').forEach((star, index, allStars) => {
         star.addEventListener('click', function() {
             if (!isLoggedId) {
@@ -147,7 +186,6 @@
             }
 
             const rate = index + 1;
-            console.log("-> Chuẩn bị gửi AJAX với data:", { rate: rate, id_blog: blog_id });
             allStars.forEach((s, i) => {
                 if (i <= index) {
                     s.classList.add('color');
@@ -155,12 +193,13 @@
                     s.classList.remove('color');
                 }
             });
+            
             $.ajax({
                 type: 'POST',
                 url: "{% url 'rate_blog_view' %}", 
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded",
-                    "X-CSRFToken": "{{ csrf_token }}"
+                    "X-CSRFToken": csrfToken
                 },
                 data: {
                     rate: rate,
@@ -180,6 +219,109 @@
         });
     });
 
+    // Post comment
+    document.addEventListener('click', function(e) {
+        const replyButton = e.target.closest('.btn-reply');
+        if (!replyButton) {
+            return;
+        }
 
+        e.preventDefault();
+        document.getElementById('reply-to').value = replyButton.dataset.id;
+        document.getElementById('comment-form-title').textContent = 'Reply to comment';
+        document.getElementById('btn-cancel-reply').style.display = 'inline-block';
+        document.getElementById('comment-text').focus();
+        document.querySelector('.replay-box').scrollIntoView({ behavior: 'smooth' });
+    });
+
+    document.getElementById('btn-cancel-reply').addEventListener('click', function(e) {
+        e.preventDefault();
+        document.getElementById('reply-to').value = '';
+        document.getElementById('comment-form-title').textContent = 'Leave a reply';
+        this.style.display = 'none';
+    });
+
+    document.querySelector('#btn-post-comment').addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        if (!isLoggedId) {
+            alert("Vui lòng đăng nhập để bình luận!");
+            return; 
+        }
+
+        const cmt = document.getElementById('comment-text').value.trim();
+        const blogId = document.getElementById('blog-id').value;
+        const parentId = document.getElementById('reply-to').value;
+        const level = parentId ? 1 : 0;
+
+        if (!cmt) {
+            alert("Vui lòng nhập nội dung bình luận!");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('comment', cmt);
+        formData.append('blog_id', blogId);
+        formData.append('level', level);
+        formData.append('parent_id', parentId);
+        formData.append('csrfmiddlewaretoken', csrfToken);
+
+        $.ajax({
+        url: "{% url 'blog_comment_view' %}",
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if (!response.success) {
+                alert(response.error || 'Có lỗi xảy ra!');
+                return;
+            }
+
+            const d = response;
+            const newCmt = `
+                <li class="media ${Number(d.level) === 1 ? 'second-media' : ''}" id="comment-${d.comment_id}">
+                    <a class="pull-left" href="#">
+                        <img class="media-object" src="${d.avatar || "{% static 'images/home/logo.png' %}"}" style="width: 60px; height: 60px; object-fit: cover;">
+                    </a>
+                    <div class="media-body">
+                        <ul class="sinlge-post-meta">
+                            <li><i class="fa fa-user"></i> ${d.user_name}</li>
+                            <li><i class="fa fa-clock-o"></i> Vừa xong</li>
+                        </ul>
+                        <p>${d.comment}</p>
+                        <a class="btn btn-primary btn-reply" href="#" data-id="${d.comment_id}"><i class="fa fa-reply"></i>Reply</a>
+                    </div>
+                    <ul class="media-list" id="reply-${d.comment_id}"></ul>
+                </li>
+            `;
+
+
+            const mediaList = document.querySelector('.response-area > .media-list');
+            const target = Number(d.level) === 1
+                ? document.getElementById(`reply-${d.parent_id}`)
+                : mediaList;
+            if (target) {
+                target.insertAdjacentHTML('beforeend', newCmt);
+            }
+
+            const responsesCount = document.getElementById('responses-count');
+            if (responsesCount) {
+                responsesCount.textContent = `${Number(responsesCount.textContent.match(/\d+/)?.[0] || 0) + 1} RESPONSES`;
+            }
+            
+            const commentInput = document.getElementById('comment-text');
+            if (commentInput) {
+                commentInput.value = '';
+            }
+            document.getElementById('reply-to').value = '';
+            document.getElementById('comment-form-title').textContent = 'Leave a reply';
+            document.getElementById('btn-cancel-reply').style.display = 'none';
+        },
+        error: function(xhr) {
+            alert(xhr.responseJSON?.error || 'Có lỗi xảy ra khi gửi bình luận!');
+        }
+    });
+});
 </script>
 </html>
