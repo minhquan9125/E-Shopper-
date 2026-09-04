@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     '_shop_frontend',
     'blog',
     'users',
-    'account',
+    'product_account',
 ]
 
 MIDDLEWARE = [
