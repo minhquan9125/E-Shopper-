@@ -1,62 +1,68 @@
-	{% load static %}
-	{% include 'Layout/header.html' %}
-	<section>
-			<div class="container">
-				<div class="row">
-					<div class="col-sm-3">
-					{% include 'accountleft.html' %}
-					</div>
-					<div class="col-sm-9">
-						<div class="table-responsive cart_info">
-							<table class="table table-condensed">
-								
-								<thead>
-									<tr class="cart_menu" style="background: #FE980F; color: #fff;">
-										<td class="id">id</td>
-										<td class="image">image</td>
-										<td class="description">name</td>
-										<td class="price">price</td>
-										<td class="total">action</td>
-									</tr>
-								</thead>
-								{% for item in products %}
-								<tbody>
-									<tr>
-									<td class="cart_id">
-										<p>{{ item.id }}</p>
-									</td>
-									
-									<td class="cart_product">
-										{% if item.first_image %}
-											<img src="{% static item.first_image %}" width="80" alt="{{ item.name }}">
-										{% endif %}
-									</td>
-									
-									<td class="cart_description">
-										<h4><a href="">{{ item.name }}</a></h4>
-									</td>
-									
-									<td class="cart_price">
-										<p>${{ item.price }}</p>
-									</td>
-									
-									<td class="cart_total">
-										<a class="cart_quantity_edit" href="">Edit</a>
-										<a class="cart_quantity_delete" href="">Delete</a>
-									</td>
-								</tr>
-								{% empty %}
-								<tr>
-									<td colspan="5" style="text-align: center; padding: 20px;">
-										Không có mặt hàng nào
-									</td>
-								</tr>
-								</tbody>
-								{% endfor %}
-							</table>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-		{% include 'Layout/footer.html' %}
+{% load static %}
+{% include 'Layout/header.html' %}
+
+<section>
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-3">
+                {% include 'accountleft.html' %}
+            </div>
+            <div class="col-sm-9">
+                <div class="table-responsive cart_info">
+                    <table class="table table-condensed">
+                        <thead>
+                            <tr class="cart_menu" style="background: #FE980F; color: #fff;">
+                                <td class="id">ID</td>
+                                <td class="image">Image</td>
+                                <td class="description">Name</td>
+                                <td class="price">Price</td>
+                                <td class="total">Action</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in products %}
+                            <tr>
+                                <td class="cart_id">
+                                    <p>{{ item.id }}</p>
+                                </td>
+                                
+                                <td class="cart_product">
+                                    {% if item.image %}
+                                        <img src="/media/{{ item.image.4 }}" alt="{{ item.name }}" style="width: 80px; height: auto;">
+                                    {% else %}
+                                        <img src="{% static 'images/no-image.png' %}" alt="No image" style="width: 80px;">
+                                    {% endif %}
+                                </td>
+                                
+                                <td class="cart_description">
+                                    <h4><a href="">{{ item.name }}</a></h4>
+                                </td>
+                                
+                                <td class="cart_price">
+                                    <p>${{ item.price }}</p>
+                                </td>
+                                
+                                <td class="cart_total">
+                                    <a class="cart_quantity_edit" href="">Edit</a>
+                                    <a class="cart_quantity_delete" href="">Delete</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 20px;">
+                                    Không có mặt hàng nào
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="text-align: right; margin-top: 15px;">
+                    <a href="{% url 'product_view' %}" class="btn btn-primary">Add product</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% include 'Layout/footer.html' %}
