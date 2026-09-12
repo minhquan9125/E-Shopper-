@@ -27,8 +27,8 @@
                                 </td>
                                 
                                 <td class="cart_product">
-                                    {% if item.image %}
-                                        <img src="/media/{{ item.image.4 }}" alt="{{ item.name }}" style="width: 80px; height: auto;">
+                                    {% if item.display_image %}
+                                        <img src="/media/{{ item.display_image }}" alt="{{ item.name }}" style="width: 80px; height: auto;">
                                     {% else %}
                                         <img src="{% static 'images/no-image.png' %}" alt="No image" style="width: 80px;">
                                     {% endif %}
@@ -43,7 +43,7 @@
                                 </td>
                                 
                                 <td class="cart_total">
-                                    <a class="cart_quantity_edit" href="">Edit</a>
+                                    <a class="cart_quantity_edit" href=" {% url 'edit_roduct_view' item.id %}">Edit</a>
                                     <a class="cart_quantity_delete" href="">Delete</a>
                                 </td>
                             </tr>
@@ -58,7 +58,7 @@
                     </table>
                 </div>
                 <div style="text-align: right; margin-top: 15px;">
-                    <a href="{% url 'product_view' %}" class="btn btn-primary">Add product</a>
+                    <a href="{% url 'product_view'   %}" class="btn btn-primary">Add product</a>
                 </div>
             </div>
         </div>

@@ -1,0 +1,74 @@
+{% load static %}
+{% include 'Layout/header.html' %}
+<section>
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-3">
+                {% include 'accountleft.html' %}
+            </div>
+            <div class="col-sm-9">
+                <div class="blog-post-area">
+                    <h2 class="title text-center">Edit Product</h2>
+                    <div class="signup-form">
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            
+                            <input type="text" name="name" value="{{ product.name }}" placeholder="Name" required />
+                            <input type="number" name="price" value="{{ product.price }}" placeholder="Price" required />
+                            <select name="id_category">
+                                <option value="">-- Category --</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}"
+                                        {% if product.id_category_id == category.id %}selected{% endif %}>
+                                        {{ category.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            
+                            <select name="id_brand">
+                                <option value="">-- Brand --</option>
+                                {% for brand in brands %}
+                                    <option value="{{ brand.id }}"
+                                        {% if product.id_brand_id == brand.id %}selected{% endif %}>
+                                        {{ brand.name }}
+                                    </option>
+                                {% endfor %}
+                            </select> 
+                            <select name="status" id="statusSelect">
+                                <option value="0" {% if product.status == 0 %}selected{% endif %}>
+                                    New
+                                </option>
+                                <option value="1" {% if product.status == 1 %}selected{% endif %}>
+                                    Sale
+                                </option>
+                            </select>
+                            <input type="text" name="company" value="{{ product.company }}" placeholder="Company" />
+                            <input type="file" name="image" multiple accept="image/png, image/jpeg, image/jpg, image/webp" />
+                            {% for image in images %}
+                                <div style="display: inline-block; margin: 10px;">
+                                    <img
+                                        src="/media/{{ image }}"
+                                        style="width: 120px; height: 120px; object-fit: cover;"
+                                    >
+                                    <label>
+                                        <input
+                                            type="checkbox"
+                                            name="delete_images"
+                                            value="{{ image }}"
+                                        >
+                                        Xóa ảnh này
+                                    </label>
+                                </div>
+                            {% endfor %}
+                            <textarea name="detail" placeholder="Detail description">{{ product.detail }}</textarea>
+                            <button type="submit" class="btn btn-default">Update</button>
+                          
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% include 'Layout/footer.html' %}
