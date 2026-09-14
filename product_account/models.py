@@ -29,6 +29,7 @@ class Product(models.Model):
     image = models.JSONField(default=list, blank=True)
     company = models.CharField(max_length=50, default='', blank=True)
     detail = models.TextField(default='', blank=True)
-
+    create_date = models.DateTimeField(auto_now_add=True)
     def __str__(self):
         return self.name
+    

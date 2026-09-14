@@ -44,7 +44,7 @@
                                 
                                 <td class="cart_total">
                                     <a class="cart_quantity_edit" href=" {% url 'edit_roduct_view' item.id %}">Edit</a>
-                                    <a class="cart_quantity_delete" href="">Delete</a>
+                                    <a class="cart_quantity_delete" href="{% url 'delete_product_view' item.id %}">Delete</a>
                                 </td>
                             </tr>
                             {% empty %}

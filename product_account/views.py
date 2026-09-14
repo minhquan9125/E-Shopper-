@@ -26,7 +26,7 @@ def update_user_view(request):
 
 
 def my_product_view(request):
-    products = Product.objects.filter(user=request.user).order_by('-id')
+    products = Product.objects.filter(user=request.user).order_by('-create_date','-id')
     for product in products:
         product.display_image = next(
             (
@@ -216,4 +216,17 @@ def edit_roduct_view(request, id):
         'brands': Brand.objects.all(),
         'categories': Category.objects.all(),
     })
+def delete_product_view(request, id):
+    product = get_object_or_404(
+        Product,
+        id=id,
+        user=request.user
+    )
 
+    for image in product.image:
+        image_path = os.path.join(settings.MEDIA_ROOT, image)
+        if os.path.isfile(image_path):
+            os.remove(image_path)
+
+    product.delete()
+    return redirect('my_product_view')
