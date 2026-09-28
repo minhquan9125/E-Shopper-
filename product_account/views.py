@@ -3,9 +3,43 @@ import json
 from django.shortcuts import render, redirect,get_object_or_404
 from django.http import JsonResponse
 from django.conf import settings
+from django.db.models import Avg
 from PIL import Image
 from users.models import Country
+from blog.models import Rate
 from .models import Product, Brand, Category
+from django.db import connection
+
+
+def save_product_images(files):
+    """Save original product images and their 100px/200px thumbnails."""
+    save_folder = os.path.join(settings.MEDIA_ROOT, 'products')
+    os.makedirs(save_folder, exist_ok=True)
+    saved_images = []
+
+    for file in files:
+        filename = file.name.replace(' ', '_')
+        base, ext = os.path.splitext(filename)
+        ext = ext.lower()
+        original_name = f'{base}{ext}'
+        original_path = os.path.join(save_folder, original_name)
+
+        with open(original_path, 'wb+') as destination:
+            for chunk in file.chunks():
+                destination.write(chunk)
+
+        saved_images.append(f'products/{original_name}')
+
+        with Image.open(original_path) as image:
+            for size in (100, 200):
+                thumbnail = image.copy()
+                thumbnail.thumbnail((size, size))
+                thumbnail_name = f'{size}_{original_name}'
+                thumbnail.save(os.path.join(save_folder, thumbnail_name))
+                saved_images.append(f'products/{thumbnail_name}')
+
+    return saved_images
+
 
 def update_user_view(request):
     user = request.user
@@ -75,31 +109,7 @@ def  product_view(request):
                         break
             if error:
                 return JsonResponse({'status': 'error', 'error': error}, status=400)
-            saved_filenames = []
-            save_folder = os.path.join(settings.MEDIA_ROOT, "products")
-            os.makedirs(save_folder, exist_ok=True)
-
-            for file in files:
-                filename = file.name.replace(" ", "_")
-                base, ext = os.path.splitext(filename)
-                ext = ext.lower()
-
-                original_path = os.path.join(save_folder, f"{base}{ext}")
-
-                with open(original_path, "wb+") as dest:
-                    for chunk in file.chunks():
-                        dest.write(chunk)
-
-                saved_filenames.append(f"products/{base}{ext}")
-
-                img = Image.open(original_path)
-                for size in [100, 200]:
-                    img_copy = img.copy()
-                    img_copy.thumbnail((size, size))
-                    resized_name = f"products/{size}_{base}{ext}"
-                    resized_path = os.path.join(settings.MEDIA_ROOT, resized_name)
-                    img_copy.save(resized_path)
-                    saved_filenames.append(resized_name)
+            saved_filenames = save_product_images(files)
             Product.objects.create(
                 user=request.user,
                 name=name,
@@ -176,27 +186,7 @@ def edit_roduct_view(request, id):
             if image not in files_to_delete
         ]
 
-        save_folder = os.path.join(settings.MEDIA_ROOT, 'products')
-        os.makedirs(save_folder, exist_ok=True)
-        for file in new_files:
-            filename = file.name.replace(' ', '_')
-            base, ext = os.path.splitext(filename)
-            ext = ext.lower()
-            original_path = os.path.join(save_folder, f'{base}{ext}')
-
-            with open(original_path, 'wb+') as dest:
-                for chunk in file.chunks():
-                    dest.write(chunk)
-
-            product.image.append(f'products/{base}{ext}')
-            img = Image.open(original_path)
-            for size in [100, 200]:
-                img_copy = img.copy()
-                img_copy.thumbnail((size, size))
-                resized_name = f'products/{size}_{base}{ext}'
-                resized_path = os.path.join(settings.MEDIA_ROOT, resized_name)
-                img_copy.save(resized_path)
-                product.image.append(resized_name)
+        product.image.extend(save_product_images(new_files))
 
         product.name = request.POST.get('name')
         product.price = request.POST.get('price')
@@ -230,3 +220,83 @@ def delete_product_view(request, id):
 
     product.delete()
     return redirect('my_product_view')
+
+def product_detail_view(request, id):
+    product = get_object_or_404(Product, id=id)
+    images = product.image
+    if isinstance(images, str):
+        try:
+            images = json.loads(images)
+        except (TypeError, ValueError):
+            images = [images]
+    if not isinstance(images, list):
+        images = []
+    originals = [
+        image for image in images
+        if isinstance(image, str)
+        and not os.path.basename(image).startswith(('100_', '200_'))
+    ][:3]
+    product.gallery_images = [
+        {'name': image, 'url': settings.MEDIA_URL + image.lstrip('/\\')}
+        for image in originals
+    ]
+    return render(request, 'product-detail.html', {
+        'product': product,
+    })
+
+def add_to_cart(request):
+    if request.method == "POST":
+        product_id = request.POST.get('id')
+        qty = int(request.POST.get('qty', 1))
+        if not product_id:
+            return JsonResponse({'status': 'error', 'message': 'Không tìm thấy ID sản phẩm'}, status=400)
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, name, price, image FROM product_account_product  WHERE id = %s """, [product_id])
+            row = cursor.fetchone()
+        if not row:
+            return JsonResponse({'status': 'error', 'message': 'Sản phẩm không tồn tại'}, status=404)
+        image_data = row[3]
+        if isinstance(image_data, str):
+            try:
+                image_data = json.loads(image_data)
+            except:
+                pass
+        first_image = image_data[0] if isinstance(image_data, list) and len(image_data) > 0 else ""
+
+        cart = request.session.get('cart', {})
+        prod_key = str(product_id)
+        if prod_key in cart:
+
+            cart[prod_key]['quantity'] += qty
+        else:
+            cart[prod_key] = {
+                'id': row[0],
+                'name': row[1],
+                'price': float(row[2]),
+                'image': first_image,
+                'quantity': qty
+            }
+
+        request.session['cart'] = cart
+        total_quantity = sum(item['quantity'] for item in cart.values())
+        request.session['cart_count'] = total_quantity
+        request.session.modified = True
+
+        return JsonResponse({
+            'status': 'success',
+            'product_id': product_id,
+            'current_product_qty': cart[prod_key]['quantity'],
+            'total_items': total_quantity
+        })
+    return JsonResponse({'status': 'error', 'message': 'Yêu cầu không hợp lệ'}, status=400)
+
+    
+
+
+def cart_view(request):
+
+
+    return render(request, 'cart.html', {
+
+    })
