@@ -8,7 +8,6 @@ from PIL import Image
 from users.models import Country
 from blog.models import Rate
 from .models import Product, Brand, Category
-from django.db import connection
 
 
 def save_product_images(files):
@@ -234,8 +233,7 @@ def product_detail_view(request, id):
     originals = [
         image for image in images
         if isinstance(image, str)
-        and not os.path.basename(image).startswith(('100_', '200_'))
-    ][:3]
+        and not os.path.basename(image).startswith(('100_', '200_'))][:3]
     product.gallery_images = [
         {'name': image, 'url': settings.MEDIA_URL + image.lstrip('/\\')}
         for image in originals
@@ -244,59 +242,3 @@ def product_detail_view(request, id):
         'product': product,
     })
 
-def add_to_cart(request):
-    if request.method == "POST":
-        product_id = request.POST.get('id')
-        qty = int(request.POST.get('qty', 1))
-        if not product_id:
-            return JsonResponse({'status': 'error', 'message': 'Không tìm thấy ID sản phẩm'}, status=400)
-        with connection.cursor() as cursor:
-            cursor.execute("""
-                SELECT id, name, price, image FROM product_account_product  WHERE id = %s """, [product_id])
-            row = cursor.fetchone()
-        if not row:
-            return JsonResponse({'status': 'error', 'message': 'Sản phẩm không tồn tại'}, status=404)
-        image_data = row[3]
-        if isinstance(image_data, str):
-            try:
-                image_data = json.loads(image_data)
-            except:
-                pass
-        first_image = image_data[0] if isinstance(image_data, list) and len(image_data) > 0 else ""
-
-        cart = request.session.get('cart', {})
-        prod_key = str(product_id)
-        if prod_key in cart:
-
-            cart[prod_key]['quantity'] += qty
-        else:
-            cart[prod_key] = {
-                'id': row[0],
-                'name': row[1],
-                'price': float(row[2]),
-                'image': first_image,
-                'quantity': qty
-            }
-
-        request.session['cart'] = cart
-        total_quantity = sum(item['quantity'] for item in cart.values())
-        request.session['cart_count'] = total_quantity
-        request.session.modified = True
-
-        return JsonResponse({
-            'status': 'success',
-            'product_id': product_id,
-            'current_product_qty': cart[prod_key]['quantity'],
-            'total_items': total_quantity
-        })
-    return JsonResponse({'status': 'error', 'message': 'Yêu cầu không hợp lệ'}, status=400)
-
-    
-
-
-def cart_view(request):
-
-
-    return render(request, 'cart.html', {
-
-    })
