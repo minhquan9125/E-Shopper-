@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="vi">
+<body style="font-family: Arial, sans-serif; color: #333;">
+    <h2>Xác nhận đơn hàng</h2>
+    <p>Xin chào {{ name }}, đơn hàng của bạn đã được ghi nhận.</p>
+
+    <h3>Thông tin khách hàng</h3>
+    <p>Email: {{ email }}</p>
+    <p>Điện thoại: {{ phone }}</p>
+    <p>Địa chỉ: {{ address }}</p>
+
+    <h3>Chi tiết đơn hàng</h3>
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr>
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Sản phẩm</th>
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Đơn giá</th>
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Số lượng</th>
+                <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Thành tiền</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in cart_items %}
+            <tr>
+                <td style="border: 1px solid #ddd; padding: 8px;">{{ item.name }}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${{ item.price|floatformat:2 }}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">{{ item.quantity }}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${{ item.line_total|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p style="text-align: right;"><strong>Tổng đơn hàng: ${{ total|floatformat:2 }}</strong></p>
+</body>
+</html>

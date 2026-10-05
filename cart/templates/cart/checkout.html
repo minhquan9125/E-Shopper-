@@ -1,25 +1,80 @@
 {% load static %}
 {% include 'Layout/header.html' %}
+
 <section id="checkout">
     <div class="container">
-        <div class="breadcrumbs"><ol class="breadcrumb"><li><a href="{% url 'home' %}">Home</a></li><li><a href="{% url 'cart_view' %}">Cart</a></li><li class="active">Checkout</li></ol></div>
-        <h2>Checkout</h2>
-        <div class="row">
-            <div class="col-sm-7">
-                <h3>Order summary</h3>
-                <div class="table-responsive"><table class="table table-condensed">
-                    <thead><tr><th>Product</th><th>Price</th><th>Quantity</th><th>Total</th></tr></thead>
-                    <tbody>{% for item in cart_items %}<tr><td>{{ item.name }}</td><td>${{ item.price|floatformat:2 }}</td><td>{{ item.quantity }}</td><td>${{ item.line_total|floatformat:2 }}</td></tr>{% endfor %}</tbody>
-                    <tfoot><tr><th colspan="3">Order total</th><th>${{ total|floatformat:2 }}</th></tr></tfoot>
-                </table></div>
-                <a class="btn btn-default" href="{% url 'cart_view' %}">Back to cart</a>
-            </div>
-            <div class="col-sm-5">
-                <h3>Delivery information</h3>
-                {% if user.is_authenticated %}<p>{{ user.get_full_name|default:user.username }}</p><p>{{ user.email }}</p>{% if user.phone %}<p>{{ user.phone }}</p>{% endif %}{% if user.address %}<p>{{ user.address }}</p>{% endif %}{% else %}<p>Please <a href="{% url 'login' %}">sign in</a> to provide your delivery information.</p>{% endif %}
-                <p>Order review is ready. Payment and order submission can be connected here.</p>
-            </div>
+        <div class="breadcrumbs">
+            <ol class="breadcrumb">
+                <li><a href="{% url 'home' %}">Home</a></li>
+                <li><a href="{% url 'cart_view' %}">Cart</a></li>
+                <li class="active">Checkout</li>
+            </ol>
         </div>
+
+        {% if order_success %}
+            <h2>Đặt hàng thành công</h2>
+            <p>Thông tin đơn hàng đã được gửi đến email của bạn.</p>
+            <a class="btn btn-default" href="{% url 'home' %}">Tiếp tục mua sắm</a>
+        {% else %}
+            <h2>Checkout</h2>
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+
+            <div class="row">
+                <div class="col-sm-7">
+                    <h3>Order summary</h3>
+                    <div class="table-responsive">
+                        <table class="table table-condensed">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Price</th>
+                                    <th>Quantity</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in cart_items %}
+                                <tr>
+                                    <td>{{ item.name }}</td>
+                                    <td>${{ item.price|floatformat:2 }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>${{ item.line_total|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="3">Order total</th>
+                                    <th>${{ total|floatformat:2 }}</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <a class="btn btn-default" href="{% url 'cart_view' %}">Back to cart</a>
+                </div>
+
+                <div class="col-sm-5">
+                    <h3>Delivery information</h3>
+                    {% if user.is_authenticated %}
+                        <form method="post">
+                            {% csrf_token %}
+                            <p>{{ user.get_full_name|default:user.username }}</p>
+                            <p>{{ user.email }}</p>
+                            <p>{{ user.phone }}</p>
+                            <p>{{ user.address }}</p>
+                            <button class="btn btn-default check_out" type="submit">Order</button>
+                        </form>
+                    {% else %}
+                        <p>Đăng ký hoặc đăng nhập để tiếp tục đặt hàng và nhận thông tin qua email.</p>
+                        <a class="btn btn-default" href="{% url 'register' %}">Đăng ký</a>
+                        <a class="btn btn-default" href="{% url 'login' %}">Đăng nhập</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
     </div>
 </section>
+
 {% include 'Layout/footer.html' %}

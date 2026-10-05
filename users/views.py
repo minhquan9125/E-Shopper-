@@ -1,6 +1,6 @@
 
 from django.shortcuts import render,redirect
-from django.http import HttpResponse
+from django.contrib import messages
 from .form import CustomerUserForm
 from django.contrib.auth import authenticate ,logout,login
 from django.contrib.auth.forms import AuthenticationForm
@@ -17,8 +17,17 @@ def register_view(request):
             user.is_staff = False
 
             user.save()
-
-            return HttpResponse("Đăng ký thành công , đã gửi mail.")
+            login(request, user)
+            if request.session.get('cart'):
+                from cart.views import complete_order
+                try:
+                    complete_order(request, user)
+                except Exception:
+                    messages.error(request, 'Tài khoản đã tạo. Không gửi được email đơn hàng; hãy thử lại tại Checkout.')
+                    return redirect('checkout_view')
+                request.session['order_success'] = True
+                return redirect('checkout_view')
+            return redirect('home')
     else :
         form=CustomerUserForm()
 

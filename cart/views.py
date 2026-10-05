@@ -2,10 +2,14 @@ import json
 import os
 
 from django.conf import settings
+from django.contrib import messages
+from django.core.mail import EmailMultiAlternatives
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 
 from product_account.models import Product
+from .models import History
 
 
 def get_product_image(images):
@@ -126,7 +130,58 @@ def delete_product_cart_view(request, id):
     })
 
 
+def send_order_email(user, cart_items, total):
+    name = user.get_full_name() or user.username
+    context = {
+        'name': name,
+        'email': user.email,
+        'phone': user.phone or '',
+        'address': user.address or '',
+        'cart_items': cart_items,
+        'total': total,
+    }
+
+    text_content = f'Chào {name}, tổng đơn hàng của bạn là ${total:.2f}.'
+    html_content = render_to_string('cart/order_email.html', context)
+
+    email = EmailMultiAlternatives(
+        'Xác nhận đơn hàng',
+        text_content,
+        settings.DEFAULT_FROM_EMAIL,
+        [user.email],
+    )
+    email.attach_alternative(html_content, 'text/html')
+    email.send()
+
+
+def complete_order(request, user):
+    cart = request.session.get('cart', {})
+    cart_items = []
+
+    for product_id, item in cart.items():
+        item['line_total'] = item['price'] * item['quantity']
+        cart_items.append({**item, 'id': product_id})
+
+    total = sum(item['line_total'] for item in cart_items)
+    if not user.email:
+        raise ValueError('Tài khoản chưa có email.')
+
+    send_order_email(user, cart_items, total)
+    History.objects.create(
+        email=user.email,
+        phone=user.phone or '',
+        name=user.get_full_name() or user.username,
+        id_user=user,
+        price=total,
+    )
+    request.session['cart'] = {}
+    request.session['cart_count'] = 0
+
+
 def checkout_view(request):
+    if request.session.pop('order_success', False):
+        return render(request, 'cart/checkout.html', {'order_success': True})
+
     cart = request.session.get('cart', {})
     cart_items = []
 
@@ -138,6 +193,19 @@ def checkout_view(request):
         return redirect('cart_view')
 
     total = sum(item['line_total'] for item in cart_items)
+
+    if request.method == 'POST':
+        if not request.user.is_authenticated:
+            return redirect('register')
+        try:
+            complete_order(request, request.user)
+        except Exception:
+            messages.error(request, 'Không gửi được email. Kiểm tra cấu hình SMTP rồi thử lại.')
+            return render(request, 'cart/checkout.html', {
+                'cart_items': cart_items, 'total': total,
+            })
+        return render(request, 'cart/checkout.html', {'order_success': True})
+
     return render(request, 'cart/checkout.html', {
         'cart_items': cart_items,
         'total': total,
